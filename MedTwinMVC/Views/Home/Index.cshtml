@@ -1,15 +1,561 @@
-﻿
+﻿@model MedTwinMVC.Models.ViewModels.DashboardViewModel
+
 @{
-    Layout = null;
+    ViewData["Title"] = "Цифровой двойник пациента - Дашборд";
 }
 
-<!DOCTYPE html>
+<!-- Стили для дашборда -->
+<style>
+    .dashboard-container {
+        padding: 20px;
+        background-color: #f5f7fa;
+        min-height: 100vh;
+    }
 
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Index</title>
-</head>
-<body>
-</body>
-</html>
+    .welcome-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 24px;
+    }
+
+    .stat-info h5 {
+        margin: 0;
+        font-size: 16px;
+        color: #666;
+    }
+
+    .stat-info p {
+        margin: 0;
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .quick-action-btn {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border: none;
+        padding: 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.3s;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .quick-action-btn:hover {
+        transform: translateY(-5px);
+    }
+
+    .metric-badge {
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 20px;
+        margin: 5px;
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .metric-badge.normal {
+        background: #e8f5e9;
+        color: #4caf50;
+    }
+
+    .metric-badge.abnormal {
+        background: #ffebee;
+        color: #f44336;
+    }
+
+    .prescription-item {
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #4caf50;
+    }
+
+    .consultation-item {
+        padding: 15px;
+        background: #fff3e0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #ff9800;
+    }
+
+    .mood-indicator {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 100px;
+        font-size: 40px;
+        margin: 10px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .mood-indicator:hover {
+        transform: scale(1.1);
+    }
+
+    .mood-indicator.selected {
+        box-shadow: 0 0 0 4px #4caf50;
+    }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    @@media (max-width: 768px) {
+        .grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- Приветствие -->
+    <div class="welcome-card">
+        <h2>Добрый день, @Model.PatientFullName.Split(' ')[1]!</h2>
+        <p>Сегодня @Model.Today.ToString("dd.MM.yyyy")</p>
+        <p style="margin: 0; font-size: 14px;">Возраст: @Model.PatientAge лет | Дата рождения: @Model.PatientBirthday.ToString("dd.MM.yyyy")</p>
+    </div>
+
+    <!-- Основная сетка -->
+    <div class="grid-2">
+        <!-- Левая колонка -->
+        <div>
+            <!-- Показатели здоровья -->
+            <div class="stats-card">
+                <h4>📊 Показатели здоровья</h4>
+
+                @if (Model.LatestHealthMetrics != null && Model.LatestHealthMetrics.Any())
+                {
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                        @foreach (var metric in Model.LatestHealthMetrics.Take(6))
+                        {
+                            <div class="metric-badge @(metric.IsNormal ? "normal" : "abnormal")">
+                                <strong>@metric.MetricTypeName</strong><br />
+                                @metric.Value @metric.UnitName<br />
+                                <small>@metric.MeasuredAt.ToString("HH:mm")</small>
+                            </div>
+                        }
+                    </div>
+
+                    <a href="#" class="btn btn-primary btn-sm">Посмотреть все показатели</a>
+                }
+                else
+                {
+                    <p class="text-muted">Показатели здоровья не найдены</p>
+                }
+            </div>
+
+            <!-- Активные назначения -->
+            <div class="stats-card">
+                <h4>💊 Активные назначения (@Model.ActivePrescriptionsCount)</h4>
+
+                @if (Model.ActivePrescriptions != null && Model.ActivePrescriptions.Any())
+                {
+                    @foreach (var prescription in Model.ActivePrescriptions)
+                    {
+                        <div class="prescription-item">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong>@prescription.Medication?.Name</strong><br />
+                                    <small>@prescription.Quantity @prescription.DoseUnit?.Name</small><br />
+                                    <small>@prescription.Frequency?.Name</small>
+                                </div>
+                                <button class="btn btn-sm btn-success" onclick="markTaken(@prescription.Id)">
+                                    ✅
+                                </button>
+                            </div>
+                            <small style="color: #666;">
+                                С: @prescription.StartDate.ToString("dd.MM.yyyy")
+                                @(prescription.EndDate.HasValue ? $" по: {prescription.EndDate.Value.ToString("dd.MM.yyyy")}" : "")
+                            </small>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Нет активных назначений</p>
+                }
+            </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div>
+            <!-- Предстоящие визиты -->
+            <div class="stats-card">
+                <h4>📅 Предстоящие визиты (@Model.UpcomingConsultationsCount)</h4>
+
+                @if (Model.UpcomingConsultations != null && Model.UpcomingConsultations.Any())
+                {
+                    @foreach (var consultation in Model.UpcomingConsultations)
+                    {
+                        <div class="consultation-item">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <strong>@consultation.Doctor?.Surname @consultation.Doctor?.Name[0]. @consultation.Doctor?.Patronymic?[0].</strong><br />
+                                    <small>@consultation.DateConsultation.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <button class="btn btn-sm btn-info">ℹ️</button>
+                            </div>
+                            @if (!string.IsNullOrEmpty(consultation.Notes))
+                            {
+                                <small style="color: #666; display: block; margin-top: 5px;">@consultation.Notes</small>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Нет запланированных визитов</p>
+                }
+            </div>
+
+            <!-- Дневник самочувствия -->
+            <div class="stats-card">
+                <h4>📝 Дневник самочувствия</h4>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p>
+                        Средний уровень настроения за неделю:
+                        <strong>@(Model.AverageMoodScore.HasValue? Math.Round(Model.AverageMoodScore.Value, 1) : "Н/Д")/5</strong>
+                    </p>
+                    <p>Записей за неделю: <strong>@Model.WellnessEntriesCount</strong></p>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="quick-action-btn" onclick="showWellnessModal()" style="width: 100%; padding: 15px;">
+                        ➕ Добавить запись
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="stats-card">
+        <h4>⚡ Быстрые действия</h4>
+        <div class="quick-actions">
+            <button class="quick-action-btn" onclick="showAddMetricModal()">
+                ➕ Добавить показатели
+            </button>
+            <button class="quick-action-btn" onclick="showMarkMedicationModal()">
+                ✅ Отметить прием
+            </button>
+            <button class="quick-action-btn" onclick="showWellnessModal()">
+                📝 Записать симптомы
+            </button>
+            <button class="quick-action-btn" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                📊 Статистика
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<!-- Модальное окно для добавления показателя -->
+<div id="addMetricModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
+        <h3>Добавить показатель здоровья</h3>
+        <select id="metricTypeSelect" class="form-control" style="margin-bottom: 15px; padding: 10px;">
+            <option value="">Выберите показатель</option>
+            @foreach (var metricType in ViewBag.MetricTypes)
+            {
+                <option value="@metricType.Id" data-min="@metricType.MinValue" data-max="@metricType.MaxValue">
+                    @metricType.Name (@metricType.UnitOfMetricType?.Name)
+                </option>
+            }
+        </select>
+        <input type="number" id="metricValue" class="form-control" placeholder="Значение" step="0.1" style="margin-bottom: 15px; padding: 10px;" />
+        <div id="valueHint" style="margin-bottom: 15px; padding: 10px; border-radius: 5px;"></div>
+        <button onclick="addHealthMetric()" class="btn btn-primary" style="width: 100%; padding: 12px;">Добавить</button>
+        <button onclick="closeModal('addMetricModal')" class="btn btn-secondary" style="width: 100%; padding: 12px; margin-top: 10px;">Отмена</button>
+    </div>
+</div>
+
+<!-- Модальное окно для отметки приема -->
+<div id="markMedicationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
+        <h3>Отметить прием лекарства</h3>
+        <select id="prescriptionSelect" class="form-control" style="margin-bottom: 15px; padding: 10px;">
+            <option value="">Выберите препарат</option>
+            @if (Model.ActivePrescriptions != null)
+            {
+                @foreach (var prescription in Model.ActivePrescriptions)
+                {
+                    <option value="@prescription.Id">@prescription.Medication?.Name - @prescription.Quantity @prescription.DoseUnit?.Name</option>
+                }
+            }
+        </select>
+        <button onclick="markMedicationTaken()" class="btn btn-success" style="width: 100%; padding: 12px;">Отметить прием</button>
+        <button onclick="closeModal('markMedicationModal')" class="btn btn-secondary" style="width: 100%; padding: 12px; margin-top: 10px;">Отмена</button>
+    </div>
+</div>
+
+<!-- Модальное окно для дневника -->
+<div id="wellnessModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
+        <h3>Запись в дневник самочувствия</h3>
+
+        <div style="margin-bottom: 20px; text-align: center;">
+            <p>Как вы себя чувствуете сегодня?</p>
+            <div id="moodSelector" style="display: flex; justify-content: space-around; margin: 20px 0;">
+                <div class="mood-indicator" onclick="selectMood(this, 1)" data-value="1">😞</div>
+                <div class="mood-indicator" onclick="selectMood(this, 2)" data-value="2">🙁</div>
+                <div class="mood-indicator selected" onclick="selectMood(this, 3)" data-value="3" id="selectedMood">😐</div>
+                <div class="mood-indicator" onclick="selectMood(this, 4)" data-value="4">🙂</div>
+                <div class="mood-indicator" onclick="selectMood(this, 5)" data-value="5">😀</div>
+            </div>
+            <input type="hidden" id="moodScore" value="3" />
+        </div>
+
+        <textarea id="wellnessNotes" class="form-control" placeholder="Опишите свое самочувствие, симптомы или заметки..." rows="4" style="margin-bottom: 15px; padding: 10px;"></textarea>
+
+        <button onclick="addWellnessEntry()" class="btn btn-info" style="width: 100%; padding: 12px;">Сохранить запись</button>
+        <button onclick="closeModal('wellnessModal')" class="btn btn-secondary" style="width: 100%; padding: 12px; margin-top: 10px;">Отмена</button>
+    </div>
+</div>
+
+<script>
+    function showAddMetricModal() {
+        document.getElementById('addMetricModal').style.display = 'block';
+    }
+
+    function showMarkMedicationModal() {
+        document.getElementById('markMedicationModal').style.display = 'block';
+    }
+
+    function showWellnessModal() {
+        document.getElementById('wellnessModal').style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function selectMood(element, value) {
+        // Убираем выделение со всех
+        document.querySelectorAll('.mood-indicator').forEach(el => {
+            el.classList.remove('selected');
+        });
+        // Добавляем выделение на выбранный
+        element.classList.add('selected');
+        // Сохраняем значение
+        document.getElementById('moodScore').value = value;
+    }
+
+    document.getElementById('metricTypeSelect').addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        const min = option.getAttribute('data-min');
+        const max = option.getAttribute('data-max');
+        const hintDiv = document.getElementById('valueHint');
+
+        if (min && max) {
+            hintDiv.innerHTML = `<strong>Норма:</strong> ${min} - ${max}`;
+            hintDiv.style.backgroundColor = '#e3f2fd';
+            hintDiv.style.color = '#1976d2';
+        } else {
+            hintDiv.innerHTML = '';
+        }
+    });
+
+    async function addHealthMetric() {
+        const metricTypeId = document.getElementById('metricTypeSelect').value;
+        const value = document.getElementById('metricValue').value;
+
+        if (!metricTypeId || !value) {
+            alert('Пожалуйста, заполните все поля');
+            return;
+        }
+
+        try {
+            const response = await fetch('/Home/AddHealthMetric', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    metricTypeId: parseInt(metricTypeId),
+                    value: parseFloat(value)
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка сервера: ' + response.status);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert('Ошибка: ' + result.message);
+            }
+        } catch (error) {
+            alert('Произошла ошибка при добавлении показателя: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    async function markMedicationTaken() {
+        const prescriptionId = document.getElementById('prescriptionSelect').value;
+
+        if (!prescriptionId) {
+            alert('Пожалуйста, выберите препарат');
+            return;
+        }
+
+        try {
+            const response = await fetch('/Home/MarkMedicationTaken', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    prescriptionId: parseInt(prescriptionId)
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка сервера: ' + response.status);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                closeModal('markMedicationModal');
+            } else {
+                alert('Ошибка: ' + result.message);
+            }
+        } catch (error) {
+            alert('Произошла ошибка: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    async function addWellnessEntry() {
+        const moodScore = document.getElementById('moodScore').value;
+        const notes = document.getElementById('wellnessNotes').value;
+
+        try {
+            const response = await fetch('/Home/QuickWellnessEntry', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                body: JSON.stringify({
+                    moodScore: parseInt(moodScore),
+                    notes: notes
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка сервера: ' + response.status);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                closeModal('wellnessModal');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + result.message);
+            }
+        } catch (error) {
+            alert('Произошла ошибка при добавлении записи: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    async function markTaken(prescriptionId) {
+        if (confirm('Отметить прием этого препарата?')) {
+            try {
+                const response = await fetch('/Home/MarkMedicationTaken', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({
+                        prescriptionId: prescriptionId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка сервера: ' + response.status);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Произошла ошибка: ' + error.message);
+            }
+        }
+    }
+
+    // Функция для получения токена верификации
+    function getAntiForgeryToken() {
+        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenElement ? tokenElement.value : '';
+    }
+
+    // Закрытие модальных окон при клике вне их
+    window.onclick = function(event) {
+        if (event.target.id === 'addMetricModal' ||
+            event.target.id === 'markMedicationModal' ||
+            event.target.id === 'wellnessModal') {
+            closeModal(event.target.id);
+        }
+    }
+</script>
