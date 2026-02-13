@@ -4,7 +4,7 @@
     ViewData["Title"] = "Цифровой двойник пациента - Дашборд";
 }
 
-<!-- Стили для дашборда -->
+
 <style>
     .dashboard-container {
         padding: 20px;
@@ -157,18 +157,16 @@
 </style>
 
 <div class="dashboard-container">
-    <!-- Приветствие -->
+
     <div class="welcome-card">
         <h2>Добрый день, @Model.PatientFullName.Split(' ')[1]!</h2>
         <p>Сегодня @Model.Today.ToString("dd.MM.yyyy")</p>
         <p style="margin: 0; font-size: 14px;">Возраст: @Model.PatientAge лет | Дата рождения: @Model.PatientBirthday.ToString("dd.MM.yyyy")</p>
     </div>
 
-    <!-- Основная сетка -->
+
     <div class="grid-2">
-        <!-- Левая колонка -->
         <div>
-            <!-- Показатели здоровья -->
             <div class="stats-card">
                 <h4>📊 Показатели здоровья</h4>
 
@@ -193,7 +191,6 @@
                 }
             </div>
 
-            <!-- Активные назначения -->
             <div class="stats-card">
                 <h4>💊 Активные назначения (@Model.ActivePrescriptionsCount)</h4>
 
@@ -226,9 +223,7 @@
             </div>
         </div>
 
-        <!-- Правая колонка -->
         <div>
-            <!-- Предстоящие визиты -->
             <div class="stats-card">
                 <h4>📅 Предстоящие визиты (@Model.UpcomingConsultationsCount)</h4>
 
@@ -257,7 +252,6 @@
                 }
             </div>
 
-            <!-- Дневник самочувствия -->
             <div class="stats-card">
                 <h4>📝 Дневник самочувствия</h4>
 
@@ -278,7 +272,6 @@
         </div>
     </div>
 
-    <!-- Быстрые действия -->
     <div class="stats-card">
         <h4>⚡ Быстрые действия</h4>
         <div class="quick-actions">
@@ -298,8 +291,6 @@
     </div>
 </div>
 
-<!-- Модальные окна -->
-<!-- Модальное окно для добавления показателя -->
 <div id="addMetricModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
         <h3>Добавить показатель здоровья</h3>
@@ -319,7 +310,6 @@
     </div>
 </div>
 
-<!-- Модальное окно для отметки приема -->
 <div id="markMedicationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
         <h3>Отметить прием лекарства</h3>
@@ -338,7 +328,6 @@
     </div>
 </div>
 
-<!-- Модальное окно для дневника -->
 <div id="wellnessModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="background: white; margin: 100px auto; padding: 30px; border-radius: 10px; max-width: 500px;">
         <h3>Запись в дневник самочувствия</h3>
@@ -380,13 +369,10 @@
     }
 
     function selectMood(element, value) {
-        // Убираем выделение со всех
         document.querySelectorAll('.mood-indicator').forEach(el => {
             el.classList.remove('selected');
         });
-        // Добавляем выделение на выбранный
         element.classList.add('selected');
-        // Сохраняем значение
         document.getElementById('moodScore').value = value;
     }
 
@@ -544,13 +530,11 @@
         }
     }
 
-    // Функция для получения токена верификации
     function getAntiForgeryToken() {
         const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
         return tokenElement ? tokenElement.value : '';
     }
 
-    // Закрытие модальных окон при клике вне их
     window.onclick = function(event) {
         if (event.target.id === 'addMetricModal' ||
             event.target.id === 'markMedicationModal' ||

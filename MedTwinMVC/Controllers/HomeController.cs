@@ -17,7 +17,6 @@ namespace MedTwinMVC.Controllers
 
         public IActionResult Index()
         {
-            // Получаем текущего пациента из авторизации
             var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
             var patient = _db.Patients
                 .Include(p => p.Gender)
@@ -28,7 +27,6 @@ namespace MedTwinMVC.Controllers
                 return RedirectToAction("Login", "Authorization");
             }
 
-            // Рассчитываем возраст
             var today = DateTime.Today;
             var age = today.Year - patient.Birthday.Year;
             if (patient.Birthday > DateOnly.FromDateTime(today.AddYears(-age)))
@@ -43,7 +41,6 @@ namespace MedTwinMVC.Controllers
                 Today = DateTime.Now
             };
 
-            // Последние показатели здоровья (за последние 7 дней, последние 10 записей)
             var latestMetrics = _db.HealthMetrics
                 .Where(hm => hm.PatientId == userId && hm.MeasuredAt >= DateTime.Now.AddDays(-7))
                 .OrderByDescending(hm => hm.MeasuredAt)
@@ -61,7 +58,6 @@ namespace MedTwinMVC.Controllers
 
             viewModel.LatestHealthMetrics = latestMetrics;
 
-            // Активные назначения (статус "активный" - предположим, что это статус с Id = 1)
             var todayDateOnly = DateOnly.FromDateTime(DateTime.Today);
 
             var activePrescriptions = _db.Prescriptions
@@ -80,7 +76,6 @@ namespace MedTwinMVC.Controllers
             viewModel.ActivePrescriptions = activePrescriptions;
             viewModel.ActivePrescriptionsCount = activePrescriptions.Count;
 
-            // Предстоящие визиты (на этой неделе)
             var weekStart = DateTime.Now.Date;
             var weekEnd = DateTime.Now.Date.AddDays(7);
 
@@ -94,7 +89,6 @@ namespace MedTwinMVC.Controllers
             viewModel.UpcomingConsultations = upcomingConsultations;
             viewModel.UpcomingConsultationsCount = upcomingConsultations.Count;
 
-            // Статистика дневника самочувствия (за последнюю неделю)
             var weekAgo = DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
 
             var wellnessEntries = _db.WellnessJournals
@@ -108,7 +102,6 @@ namespace MedTwinMVC.Controllers
                 .DefaultIfEmpty()
                 .Average();
 
-            // Передаем типы метрик для модального окна
             ViewBag.MetricTypes = _db.MetricTypes
                 .Include(mt => mt.UnitOfMetricType)
                 .ToList();
@@ -116,7 +109,6 @@ namespace MedTwinMVC.Controllers
             return View(viewModel);
         }
 
-        // Метод для быстрого добавления показателя
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddHealthMetric([FromBody] AddHealthMetricRequest request)
@@ -143,7 +135,6 @@ namespace MedTwinMVC.Controllers
             return Json(new { success = true, message = "Показатель успешно добавлен" });
         }
 
-        // Метод для отметки приема лекарства
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult MarkMedicationTaken([FromBody] MarkMedicationRequest request)
@@ -153,11 +144,9 @@ namespace MedTwinMVC.Controllers
                 return Json(new { success = false, message = "Некорректные данные" });
             }
 
-            // Здесь можно добавить логику отметки о приеме
             return Json(new { success = true, message = "Прием лекарства отмечен" });
         }
 
-        // Метод для быстрой записи в дневник
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult QuickWellnessEntry([FromBody] WellnessEntryRequest request)
@@ -184,7 +173,6 @@ namespace MedTwinMVC.Controllers
         }
     }
 
-    // Классы для запросов
     public class AddHealthMetricRequest
     {
         public int MetricTypeId { get; set; }
